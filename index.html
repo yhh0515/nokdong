@@ -24,12 +24,12 @@
 
         /* 급식 영역 디자인 */
         .date-group { display: flex; gap: 8px; margin-bottom: 15px; background: #f0f0f0; padding: 6px; border-radius: 16px; }
-        .date-group button { flex: 1; padding: 10px 0; border: none; border-radius: 12px; background-color: transparent; color: #666; font-weight: 600; cursor: pointer; }
+        .date-group button { flex: 1; padding: 10px 0; border: none; border-radius: 12px; background-color: transparent; color: #666; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .date-group button.active { background-color: #ffffff; color: #007AFF; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .date-group button span { display: block; font-size: 10px; opacity: 0.7; }
 
         .meal-type-group { display: flex; gap: 5px; margin-bottom: 15px; }
-        .meal-type-group button { flex: 1; padding: 8px 0; border: 1px solid #e1e8f0; border-radius: 10px; background: white; color: #888; cursor: pointer; font-size: 14px; }
+        .meal-type-group button { flex: 1; padding: 8px 0; border: 1px solid #e1e8f0; border-radius: 10px; background: white; color: #888; cursor: pointer; font-size: 14px; -webkit-tap-highlight-color: transparent; }
         .meal-type-group button.active { background: #007AFF; color: white; border-color: #007AFF; font-weight: bold; }
 
         .info-box { padding: 20px; background: #f8faff; border-radius: 18px; border: 1px solid #e1e8f0; min-height: 100px; }
@@ -51,28 +51,27 @@
                     <th id="day1">월</th><th id="day2">화</th><th id="day3">수</th><th id="day4">목</th><th id="day5">금</th>
                 </tr>
             </thead>
-            <tbody id="timetable-content">
-                </tbody>
+            <tbody id="timetable-content"></tbody>
         </table>
     </div>
 
     <span class="section-title" id="mealMainTitle">🍱 오늘의 급식</span>
     <div class="date-group">
-        <button id="prevBtn" onclick="changeDate(-1)">
+        <button type="button" id="prevBtn" onclick="changeDate(-1)">
             <span>이전날</span><div id="prevDateText">0.0</div>
         </button>
-        <button id="todayBtn" class="active" onclick="changeDate(0)">
+        <button type="button" id="todayBtn" class="active" onclick="changeDate(0)">
             <span>선택됨</span><div id="todayDateText">0.0</div>
         </button>
-        <button id="nextBtn" onclick="changeDate(1)">
+        <button type="button" id="nextBtn" onclick="changeDate(1)">
             <span>다음날</span><div id="nextDateText">0.0</div>
         </button>
     </div>
 
     <div class="meal-type-group">
-        <button id="type1" onclick="changeMealType(1)">조식</button>
-        <button id="type2" class="active" onclick="changeMealType(2)">중식</button>
-        <button id="type3" onclick="changeMealType(3)">석식</button>
+        <button type="button" id="type1" onclick="changeMealType(1)">조식</button>
+        <button type="button" id="type2" class="active" onclick="changeMealType(2)">중식</button>
+        <button type="button" id="type3" onclick="changeMealType(3)">석식</button>
     </div>
 
     <div class="info-box">
@@ -94,7 +93,6 @@ async function updateDisplay() {
     baseDate.setDate(baseDate.getDate() + currentOffset);
     const dateStr = baseDate.getFullYear() + String(baseDate.getMonth() + 1).padStart(2, '0') + String(baseDate.getDate()).padStart(2, '0');
     
-    // 1. 날짜 및 버튼 텍스트 업데이트
     const days = ["일","월","화","수","목","금","토"];
     document.getElementById("mealMainTitle").innerText = `🍱 ${baseDate.getMonth()+1}/${baseDate.getDate()}(${days[baseDate.getDay()]}) ${["","조식","중식","석식"][currentType]}`;
 
@@ -104,24 +102,21 @@ async function updateDisplay() {
     };
     setBtnDate("prevDateText", -1); setBtnDate("todayDateText", 0); setBtnDate("nextDateText", 1);
 
-    // 요일 강조
     const realToday = new Date().getDay();
     for(let i=1; i<=5; i++) {
-        document.getElementById(`day${i}`).classList.toggle("current-day", i === realToday);
+        const el = document.getElementById(`day${i}`);
+        if(el) el.classList.toggle("current-day", i === realToday);
     }
 
-    // 2. 시간표 불러오기 (이번 주 월~금)
     updateTimetable(baseDate);
-
-    // 3. 급식 불러오기
     updateMeal(dateStr);
 }
 
 async function updateTimetable(baseDate) {
     const tableBody = document.getElementById("timetable-content");
-    tableBody.innerHTML = "<tr><td colspan='6'>로딩 중...</td></tr>";
+    // 매번 로딩 중을 띄우면 화면이 덜컹거릴 수 있으므로, 처음 한 번만 비웁니다.
+    if (!tableBody.innerHTML) tableBody.innerHTML = "<tr><td colspan='6'>로딩 중...</td></tr>";
 
-    // 이번 주의 월요일 날짜 계산
     const currentDay = baseDate.getDay();
     const diff = baseDate.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
     const monday = new Date(baseDate);
@@ -135,8 +130,6 @@ async function updateTimetable(baseDate) {
     }
 
     try {
-        const timetableData = {};
-        // 월~금 데이터를 동시에 요청
         const requests = weekDates.map(d => 
             fetch(`https://open.neis.go.kr/hub/hisTimetable?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&GRADE=${GRADE}&CLASS_NM=${CLASS_NM}&ALL_TI_YMD=${d}`)
             .then(res => res.json())
@@ -144,23 +137,22 @@ async function updateTimetable(baseDate) {
 
         const results = await Promise.all(requests);
         
-        // 데이터 정리 (7교시까지)
-        let maxPeriod = 7;
-        for(let p=1; p<=maxPeriod; p++) {
+        let newContent = "";
+        for(let p=1; p<=7; p++) {
             let rowHtml = `<tr><td>${p}</td>`;
             for(let d=0; d<5; d++) {
                 const dayData = results[d].hisTimetable;
                 let subject = "-";
-                if(dayData) {
+                if(dayData && dayData[1] && dayData[1].row) {
                     const periodData = dayData[1].row.find(r => parseInt(r.PERIO) === p);
-                    if(periodData) subject = periodData.ITRT_CNTNT.replace(/\[.*\]/, ""); // [C] 같은 기호 제거
+                    if(periodData) subject = periodData.ITRT_CNTNT.replace(/\[.*\]/, "");
                 }
                 rowHtml += `<td>${subject}</td>`;
             }
             rowHtml += `</tr>`;
-            if(p === 1) tableBody.innerHTML = ""; // 첫 로딩 문구 제거
-            tableBody.innerHTML += rowHtml;
+            newContent += rowHtml;
         }
+        tableBody.innerHTML = newContent;
     } catch (e) {
         tableBody.innerHTML = "<tr><td colspan='6'>시간표를 가져올 수 없습니다.</td></tr>";
     }
