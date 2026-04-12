@@ -3,20 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>녹동고 급식/시간표</title>
+    <title>녹동고 급식 정보</title>
     <style>
-        body { font-family: 'Pretendard', -apple-system, sans-serif; padding: 20px; background-color: #f0f2f5; color: #333; }
-        .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 1.4rem; }
+        /* 배경과 글꼴 설정 */
+        body { font-family: 'Pretendard', sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
         
-        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-group button { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #e9ecef; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-group button.active { background: #3498db; color: white; }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
 
-        .info-box { margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 15px; border-left: 5px solid #3498db; }
-        .label { font-weight: bold; color: #3498db; display: block; margin-bottom: 10px; font-size: 1.1rem; }
-        #meal { line-height: 1.8; font-size: 1.05rem; }
-        #timetable div { margin-bottom: 5px; }
+        /* 버튼 영역 - 버튼이 안 보인다면 이 부분을 확인하세요 */
+        .btn-group { 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            background: #eee; /* 버튼 뒤 배경색을 줘서 위치 확인 */
+            padding: 5px;
+            border-radius: 12px;
+        }
+        
+        .btn-group button { 
+            flex: 1; 
+            padding: 12px 0; 
+            border: none; 
+            border-radius: 8px; 
+            background-color: #ffffff; /* 버튼을 흰색으로 */
+            color: #333;
+            font-weight: bold; 
+            font-size: 16px;
+            cursor: pointer; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 그림자 추가 */
+        }
+
+        /* 클릭된 버튼이나 오늘 버튼 강조 */
+        .btn-group button.active { 
+            background-color: #007AFF; 
+            color: white; 
+        }
+
+        .info-box { 
+            margin-top: 15px; 
+            padding: 15px; 
+            background: #f9f9f9; 
+            border-radius: 12px; 
+            border-left: 5px solid #007AFF;
+        }
+
+        .label { font-weight: bold; color: #007AFF; margin-bottom: 8px; display: block; }
+        #meal { line-height: 1.6; min-height: 50px; }
     </style>
 </head>
 <body>
@@ -31,18 +64,13 @@
     </div>
 
     <div class="info-box">
-        <span class="label">🍱 오늘의 급식</span>
-        <div id="meal">정보를 가져오는 중...</div>
-    </div>
-
-    <div class="info-box">
-        <span class="label">📅 시간표 (기본)</span>
-        <div id="timetable">요일을 확인 중...</div>
+        <span class="label">🍱 급식 메뉴</span>
+        <div id="meal">메뉴를 불러오는 중...</div>
     </div>
 </div>
 
 <script>
-let currentOffset = 0; // 0은 오늘, 1은 내일, -1은 어제
+let currentOffset = 0;
 
 function updateDisplay() {
     const targetDate = new Date();
@@ -54,46 +82,31 @@ function updateDisplay() {
     const dateStr = `${year}${month}${date}`;
     const dayDisplay = ["일","월","화","수","목","금","토"][targetDate.getDay()];
 
-    // 날짜 표시 업데이트
     document.getElementById("dateDisplay").innerText = `${year}. ${month}. ${date}. (${dayDisplay})`;
     
-    // 버튼 스타일 업데이트
-    document.getElementById("todayBtn").classList.toggle("active", currentOffset === 0);
+    // 오늘로 돌아왔을 때만 버튼 강조
+    document.getElementById("todayBtn").style.backgroundColor = (currentOffset === 0) ? "#007AFF" : "#fff";
+    document.getElementById("todayBtn").style.color = (currentOffset === 0) ? "#fff" : "#333";
 
-    // 1. 급식 불러오기 (녹동고 코드: F10, 8431057)
     const mealEl = document.getElementById("meal");
-    mealEl.innerText = "불러오는 중...";
+    mealEl.innerText = "로딩 중...";
     
-    const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=F10&SD_SCHUL_CODE=8431057&MLSV_YMD=${dateStr}`;
-
-    fetch(url)
+    // 나이스 API 호출 (녹동고 F10, 8431057)
+    fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=F10&SD_SCHUL_CODE=8431057&MLSV_YMD=${dateStr}`)
         .then(res => res.json())
         .then(data => {
             if (data.mealServiceDietInfo) {
                 let menu = data.mealServiceDietInfo[1].row[0].DDISH_NM;
-                menu = menu.replace(/\([^)]*\)/g, '').replace(/\./g, '').trim();
+                // 알레르기 번호 제거 정규식
+                menu = menu.replace(/[0-9]|\./g, '').replace(/\([^)]*\)/g, '').trim();
                 mealEl.innerHTML = menu.split('<br/>').join('<br>');
             } else {
-                mealEl.innerText = "급식 정보가 없습니다. 🏖️";
+                mealEl.innerText = "등록된 급식 정보가 없습니다. 🍱";
             }
         })
-        .catch(() => mealEl.innerText = "오류가 발생했습니다. 😢");
-
-    // 2. 시간표 업데이트
-    const timetable = {
-        "월": ["국어", "수학", "영어", "과학", "체육", "사회", "창체"],
-        "화": ["수학", "영어", "국어", "사회", "미술", "음악", "진로"],
-        "수": ["과학", "수학", "영어", "체육", "자습", "동아리"],
-        "목": ["국어", "사회", "수학", "영어", "음악", "미술", "과학"],
-        "금": ["영어", "국어", "과학", "자습", "체육", "일본어"]
-    };
-
-    const timetableEl = document.getElementById("timetable");
-    if (timetable[dayDisplay]) {
-        timetableEl.innerHTML = timetable[dayDisplay].map((sub, i) => `<div>${i+1}교시: ${sub}</div>`).join("");
-    } else {
-        timetableEl.innerText = "즐거운 주말 보내세요! 🏠";
-    }
+        .catch(() => {
+            mealEl.innerText = "데이터를 가져오지 못했습니다. 😢";
+        });
 }
 
 function changeDate(offset) {
@@ -102,7 +115,7 @@ function changeDate(offset) {
     updateDisplay();
 }
 
-// 초기 실행
+// 처음 실행
 updateDisplay();
 </script>
 
