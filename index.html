@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학교 생활 도우미</title>
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      text-align: center;
+      background: #eef2f7;
+      padding: 20px;
+      color: #333;
+    }
+    .container { max-width: 400px; margin: auto; }
+    .box {
+      background: white;
+      padding: 20px;
+      margin: 15px auto;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+    }
+    .box:hover { transform: translateY(-5px); }
+    h1 { color: #4a90e2; margin-bottom: 20px; }
+    h2 { font-size: 1.2rem; color: #666; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
+    #date { font-weight: bold; color: #333; }
+    .timetable-item { padding: 5px 0; border-bottom: 1px dashed #eee; }
+    .timetable-item:last-child { border-bottom: none; }
+    .meal-list { line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎒 학교 생활 도우미</h1>
+
+  <div class="box">
+    <h2>📅 오늘의 날짜</h2>
+    <div id="date"></div>
+  </div>
+
+  <div class="box">
+    <h2>📚 오늘의 시간표</h2>
+    <div id="timetable"></div>
+  </div>
+
+  <div class="box">
+    <h2>🍱 오늘의 급식</h2>
+    <div id="meal" class="meal-list"></div>
+  </div>
+</div>
+
+<script>
+// ===== 1. 날짜 및 요일 설정 =====
+const today = new Date();
+const days = ["일","월","화","수","목","금","토"];
+const day = days[today.getDay()];
+
+// 날짜 형식을 "2026. 4. 12." 처럼 고정 (meals 키값과 일치시키기 위함)
+const year = today.getFullYear();
+const month = today.getMonth() + 1;
+const date = today.getDate();
+const dateKey = `${year}. ${month}. ${date}.`;
+
+document.getElementById("date").innerText = `${dateKey} (${day}요일)`;
+
+// ===== 2. 시간표 데이터 =====
+const timetable = {
+  "월": ["국어", "수학", "영어", "과학", "체육"],
+  "화": ["수학", "영어", "국어", "사회", "미술"],
+  "수": ["과학", "수학", "영어", "체육", "자습"],
+  "목": ["국어", "사회", "수학", "영어", "음악"],
+  "금": ["영어", "국어", "과학", "자습", "체육"]
+};
+
+const timetableEl = document.getElementById("timetable");
+if (timetable[day]) {
+  timetableEl.innerHTML = timetable[day]
+    .map((sub, i) => `<div class="timetable-item"><strong>${i+1}교시:</strong> ${sub}</div>`)
+    .join("");
+} else {
+  timetableEl.innerText = "오늘은 평화로운 주말입니다 😴";
+}
+
+// ===== 3. 급식 데이터 =====
+const meals = {
+  "2026. 4. 12.": "현미밥 🍚<br>소고기 미역국<br>계란말이<br>제육볶음<br>포기김치",
+  "2026. 4. 13.": "짜장밥 🍛<br>짬뽕국물<br>탕수육<br>단무지 무침"
+};
+
+const mealEl = document.getElementById("meal");
+if (meals[dateKey]) {
+  mealEl.innerHTML = meals[dateKey];
+} else {
+  mealEl.innerText = "등록된 급식 정보가 없어요 😢";
+}
+</script>
+
+</body>
+</html>
