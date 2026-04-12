@@ -3,83 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>녹동고등학교 급식/시간표</title>
+    <title>녹동고 급식/시간표</title>
     <style>
-        body { font-family: 'Pretendard', sans-serif; padding: 20px; line-height: 1.6; background-color: #f4f7f6; }
-        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .info-box { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
-        .label { font-weight: bold; color: #3498db; display: block; margin-bottom: 5px; }
-        #timetable div { margin-bottom: 3px; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; padding: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 1.4rem; }
+        
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-group button { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #e9ecef; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-group button.active { background: #3498db; color: white; }
+
+        .info-box { margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 15px; border-left: 5px solid #3498db; }
+        .label { font-weight: bold; color: #3498db; display: block; margin-bottom: 10px; font-size: 1.1rem; }
+        #meal { line-height: 1.8; font-size: 1.05rem; }
+        #timetable div { margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 id="date">날짜 로딩 중...</h2>
+    <h2 id="dateDisplay">날짜 로딩 중...</h2>
 
-    <div class="info-box">
-        <span class="label">📅 오늘의 시간표</span>
-        <div id="timetable">시간표를 불러오는 중...</div>
+    <div class="btn-group">
+        <button onclick="changeDate(-1)">어제</button>
+        <button id="todayBtn" class="active" onclick="changeDate(0)">오늘</button>
+        <button onclick="changeDate(1)">내일</button>
     </div>
 
     <div class="info-box">
         <span class="label">🍱 오늘의 급식</span>
-        <div id="meal">급식 정보를 가져오는 중...</div>
+        <div id="meal">정보를 가져오는 중...</div>
+    </div>
+
+    <div class="info-box">
+        <span class="label">📅 시간표 (기본)</span>
+        <div id="timetable">요일을 확인 중...</div>
     </div>
 </div>
 
 <script>
-// ===== 1. 설정 (전남 녹동고등학교) =====
-const ATPT_OFCDC_SC_CODE = "F10"; // 전라남도교육청
-const SD_SCHUL_CODE = "8431057";   // 녹동고등학교
+let currentOffset = 0; // 0은 오늘, 1은 내일, -1은 어제
 
-// ===== 2. 날짜 설정 =====
-const today = new Date();
-const year = today.getFullYear();
-const month = String(today.getMonth() + 1).padStart(2, '0');
-const date = String(today.getDate()).padStart(2, '0');
-const dateStr = `${year}${month}${date}`;
+function updateDisplay() {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + currentOffset);
 
-const dayDisplay = ["일","월","화","수","목","금","토"][today.getDay()];
-document.getElementById("date").innerText = `${year}. ${month}. ${date}. (${dayDisplay})`;
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const date = String(targetDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}${month}${date}`;
+    const dayDisplay = ["일","월","화","수","목","금","토"][targetDate.getDay()];
 
-// ===== 3. 시간표 데이터 (실제 시간표에 맞춰 수정하세요) =====
-const timetable = {
-  "월": ["국어", "수학", "영어", "과학", "체육", "사회", "창체"],
-  "화": ["수학", "영어", "국어", "사회", "미술", "음악", "진로"],
-  "수": ["과학", "수학", "영어", "체육", "자습", "동아리"],
-  "목": ["국어", "사회", "수학", "영어", "음악", "미술", "과학"],
-  "금": ["영어", "국어", "과학", "자습", "체육", "일본어"]
-};
+    // 날짜 표시 업데이트
+    document.getElementById("dateDisplay").innerText = `${year}. ${month}. ${date}. (${dayDisplay})`;
+    
+    // 버튼 스타일 업데이트
+    document.getElementById("todayBtn").classList.toggle("active", currentOffset === 0);
 
-const timetableEl = document.getElementById("timetable");
-if (timetable[dayDisplay]) {
-  timetableEl.innerHTML = timetable[dayDisplay].map((sub, i) => `<div>${i+1}교시: ${sub}</div>`).join("");
-} else {
-  timetableEl.innerText = "오늘은 즐거운 쉬는 날! 😎";
+    // 1. 급식 불러오기 (녹동고 코드: F10, 8431057)
+    const mealEl = document.getElementById("meal");
+    mealEl.innerText = "불러오는 중...";
+    
+    const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=F10&SD_SCHUL_CODE=8431057&MLSV_YMD=${dateStr}`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (data.mealServiceDietInfo) {
+                let menu = data.mealServiceDietInfo[1].row[0].DDISH_NM;
+                menu = menu.replace(/\([^)]*\)/g, '').replace(/\./g, '').trim();
+                mealEl.innerHTML = menu.split('<br/>').join('<br>');
+            } else {
+                mealEl.innerText = "급식 정보가 없습니다. 🏖️";
+            }
+        })
+        .catch(() => mealEl.innerText = "오류가 발생했습니다. 😢");
+
+    // 2. 시간표 업데이트
+    const timetable = {
+        "월": ["국어", "수학", "영어", "과학", "체육", "사회", "창체"],
+        "화": ["수학", "영어", "국어", "사회", "미술", "음악", "진로"],
+        "수": ["과학", "수학", "영어", "체육", "자습", "동아리"],
+        "목": ["국어", "사회", "수학", "영어", "음악", "미술", "과학"],
+        "금": ["영어", "국어", "과학", "자습", "체육", "일본어"]
+    };
+
+    const timetableEl = document.getElementById("timetable");
+    if (timetable[dayDisplay]) {
+        timetableEl.innerHTML = timetable[dayDisplay].map((sub, i) => `<div>${i+1}교시: ${sub}</div>`).join("");
+    } else {
+        timetableEl.innerText = "즐거운 주말 보내세요! 🏠";
+    }
 }
 
-// ===== 4. 나이스 API 급식 불러오기 =====
-const mealEl = document.getElementById("meal");
-const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&MLSV_YMD=${dateStr}`;
+function changeDate(offset) {
+    if (offset === 0) currentOffset = 0;
+    else currentOffset += offset;
+    updateDisplay();
+}
 
-fetch(url)
-  .then(response => response.json())
-  .then(data => {
-    if (data.mealServiceDietInfo) {
-      // 급식 메뉴에서 알레르기 번호 및 불필요한 문자 제거
-      let menu = data.mealServiceDietInfo[1].row[0].DDISH_NM;
-      menu = menu.replace(/\([^)]*\)/g, '').replace(/\./g, '').trim(); 
-      mealEl.innerHTML = menu.split('<br/>').join('<br>');
-    } else {
-      mealEl.innerText = "오늘 급식 정보가 없습니다 🍱";
-    }
-  })
-  .catch(err => {
-    console.error(err);
-    mealEl.innerText = "급식 정보를 불러오지 못했어요 😢";
-  });
+// 초기 실행
+updateDisplay();
 </script>
 
 </body>
