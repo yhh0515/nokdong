@@ -21,49 +21,51 @@
             border-radius: 24px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
         }
-        h2 { text-align: center; color: #1a1a1a; margin-bottom: 25px; font-size: 1.3rem; }
+        h2 { text-align: center; color: #1a1a1a; margin-bottom: 20px; font-size: 1.3rem; }
 
-        .btn-group { 
+        /* 날짜 선택 버튼 */
+        .date-group { 
             display: flex; 
             gap: 8px; 
-            margin-bottom: 25px; 
+            margin-bottom: 15px; 
             background: #f0f0f0; 
             padding: 6px;
             border-radius: 16px;
         }
-        .btn-group button { 
-            flex: 1; 
-            padding: 10px 0; 
-            border: none; 
-            border-radius: 12px; 
-            background-color: transparent; 
-            color: #666;
-            font-weight: 600; 
-            font-size: 16px; 
-            cursor: pointer; 
+        .date-group button { 
+            flex: 1; padding: 10px 0; border: none; border-radius: 12px; 
+            background-color: transparent; color: #666; font-weight: 600; cursor: pointer; 
         }
-        .btn-group button span { 
-            display: block; 
-            font-size: 11px; 
-            font-weight: 400; 
-            margin-bottom: 2px;
-            opacity: 0.7;
+        .date-group button.active { 
+            background-color: #ffffff; color: #007AFF; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .btn-group button.active { 
-            background-color: #ffffff; 
-            color: #007AFF; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        .date-group button span { display: block; font-size: 10px; opacity: 0.7; }
+
+        /* 식사 시간대 선택 (조식/중식/석식) */
+        .meal-type-group {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .meal-type-group button {
+            flex: 1; padding: 8px 0; border: 1px solid #e1e8f0; border-radius: 10px;
+            background: white; color: #888; cursor: pointer; font-size: 14px; transition: 0.2s;
+        }
+        .meal-type-group button.active {
+            background: #007AFF; color: white; border-color: #007AFF; font-weight: bold;
         }
 
+        /* 급식 정보 박스 */
         .info-box { 
             padding: 20px; 
             background: #f8faff; 
             border-radius: 18px; 
             border: 1px solid #e1e8f0;
+            min-height: 150px;
         }
         .label { font-weight: 700; color: #007AFF; margin-bottom: 15px; display: block; font-size: 1.1rem; }
-        #meal { line-height: 1.8; min-height: 100px; color: #444; font-size: 1.05rem; }
-        .no-meal { color: #999; text-align: center; padding: 20px 0; }
+        #meal { line-height: 1.8; color: #444; font-size: 1.05rem; }
+        .no-meal { color: #999; text-align: center; padding: 40px 0; }
     </style>
 </head>
 <body>
@@ -71,79 +73,92 @@
 <div class="container">
     <h2 id="dateDisplay">날짜 로딩 중...</h2>
 
-    <div class="btn-group">
+    <div class="date-group">
         <button id="prevBtn" onclick="changeDate(-1)">
-            <span>이전날</span>
-            <div id="prevDateText">0.00</div>
+            <span id="prevLabel">이전날</span>
+            <div id="prevDateText">0.0</div>
         </button>
         <button id="todayBtn" class="active" onclick="changeDate(0)">
-            <span>선택됨</span>
-            <div id="todayDateText">0.00</div>
+            <span id="todayLabel">선택됨</span>
+            <div id="todayDateText">0.0</div>
         </button>
         <button id="nextBtn" onclick="changeDate(1)">
-            <span>다음날</span>
-            <div id="nextDateText">0.00</div>
+            <span id="nextLabel">다음날</span>
+            <div id="nextDateText">0.0</div>
         </button>
     </div>
 
+    <div class="meal-type-group">
+        <button id="type1" onclick="changeMealType(1)">조식</button>
+        <button id="type2" class="active" onclick="changeMealType(2)">중식</button>
+        <button id="type3" onclick="changeMealType(3)">석식</button>
+    </div>
+
     <div class="info-box">
-        <span class="label">🍱 오늘의 급식 메뉴</span>
+        <span class="label" id="mealTitle">🍱 중식 메뉴</span>
         <div id="meal">데이터를 불러오는 중...</div>
     </div>
 </div>
 
 <script>
 let currentOffset = 0;
+let currentType = 2; // 기본값: 중식
 
 function updateDisplay() {
     const baseDate = new Date();
     baseDate.setDate(baseDate.getDate() + currentOffset);
 
+    // 날짜 텍스트 업데이트
     const days = ["일","월","화","수","목","금","토"];
-    const dayDisplay = days[baseDate.getDay()];
     document.getElementById("dateDisplay").innerText = 
-        `${baseDate.getFullYear()}. ${baseDate.getMonth() + 1}. ${baseDate.getDate()}. (${dayDisplay})`;
+        `${baseDate.getFullYear()}. ${baseDate.getMonth() + 1}. ${baseDate.getDate()}. (${days[baseDate.getDay()]})`;
 
-    const setBtnDate = (elementId, offset) => {
+    // 버튼 날짜 업데이트
+    const setBtnDate = (id, offset) => {
         const d = new Date();
         d.setDate(d.getDate() + currentOffset + offset);
-        const m = d.getMonth() + 1;
-        const date = d.getDate();
-        document.getElementById(elementId).innerText = `${m}.${date}`;
+        document.getElementById(id).innerText = `${d.getMonth() + 1}.${d.getDate()}`;
     };
-
     setBtnDate("prevDateText", -1);
     setBtnDate("todayDateText", 0);
     setBtnDate("nextDateText", 1);
 
+    // 식사 타입 버튼 활성화
+    document.querySelectorAll('.meal-type-group button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`type${currentType}`).classList.add('active');
+    
+    const typeNames = {1: "조식", 2: "중식", 3: "석식"};
+    document.getElementById("mealTitle").innerText = `🍱 ${typeNames[currentType]} 메뉴`;
+
     const dateStr = `${baseDate.getFullYear()}${String(baseDate.getMonth() + 1).padStart(2, '0')}${String(baseDate.getDate()).padStart(2, '0')}`;
     const mealEl = document.getElementById("meal");
-    mealEl.innerHTML = "<div class='no-meal'>메뉴를 가져오는 중... 🔍</div>";
+    mealEl.innerHTML = "<div class='no-meal'>가져오는 중... 🔍</div>";
     
-    // 알려주신 코드 반영: Q10(경남), 8490270(녹동고)
-    const officeCode = "Q10";
-    const schoolCode = "8490270";
-
-    fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${officeCode}&SD_SCHUL_CODE=${schoolCode}&MLSV_YMD=${dateStr}`)
+    // API 호출 (Q10: 경남, 8490270: 녹동고)
+    fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=Q10&SD_SCHUL_CODE=8490270&MLSV_YMD=${dateStr}&MMEAL_SC_CODE=${currentType}`)
         .then(res => res.json())
         .then(data => {
             if (data.mealServiceDietInfo) {
                 let menu = data.mealServiceDietInfo[1].row[0].DDISH_NM;
-                // 알레르기 번호 제거 및 특수문자 정리
                 menu = menu.replace(/\([0-9.]+\)/g, "").trim();
                 mealEl.innerHTML = menu.split('<br/>').join('<br>');
             } else {
-                mealEl.innerHTML = "<div class='no-meal'>급식 정보가 없습니다. 🏖️</div>";
+                mealEl.innerHTML = `<div class='no-meal'>등록된 ${typeNames[currentType]} 정보가 없습니다. 🏖️</div>`;
             }
         })
-        .catch(err => {
-            mealEl.innerHTML = "<div class='no-meal'>데이터 로딩 실패 😢</div>";
+        .catch(() => {
+            mealEl.innerHTML = "<div class='no-meal'>데이터를 가져오지 못했습니다. 😢</div>";
         });
 }
 
 function changeDate(offset) {
     if (offset === 0) currentOffset = 0;
     else currentOffset += offset;
+    updateDisplay();
+}
+
+function changeMealType(type) {
+    currentType = type;
     updateDisplay();
 }
 
