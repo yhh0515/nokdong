@@ -18,8 +18,9 @@
         .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem; table-layout: fixed; }
         .timetable th { color: var(--primary); padding: 10px 0; font-weight: 800; border-bottom: 2px solid #f0f4f8; }
         .timetable td { padding: 12px 2px; border-bottom: 1px solid #f5f5f5; height: 45px; }
-        .highlight { color: var(--primary); font-weight: 800; background: #f0f7ff; border-radius: 10px; }
-        .meal-box { padding: 20px; background: #f8faff; border-radius: 20px; border: 1px solid #e1e8f0; min-height: 80px; line-height: 1.7; color: #444; margin-top: 10px; }
+        /* 자동으로 바뀐 과목 강조 스타일 */
+        .is-matched { color: var(--primary); font-weight: 800; background: #f0f7ff; border-radius: 10px; }
+        .meal-box { padding: 20px; background: #f8faff; border-radius: 20px; border: 1px solid #e1e8f0; min-height: 80px; line-height: 1.7; color: #444; }
     </style>
 </head>
 <body>
@@ -29,12 +30,12 @@
 
     <div class="setting-box">
         <div class="input-row">
-            <input type="number" id="studentId" placeholder="학번 4자리 입력" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
+            <input type="number" id="studentId" placeholder="학번 4자리 (예: 3110)" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
             <button class="btn-confirm" onclick="updateByStudentId()">확인</button>
         </div>
     </div>
 
-    <span class="section-title">📅 맞춤형 시간표</span>
+    <span class="section-title">📅 나의 맞춤 시간표</span>
     <div class="timetable-card">
         <table class="timetable">
             <thead>
@@ -51,46 +52,37 @@
 <script>
 const OFFICE_CODE = "Q10", SCHOOL_CODE = "8490270";
 
-async function updateDisplay() {
-    const studentId = document.getElementById("studentId").value;
-    const d = new Date();
-    const dateStr = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-    
-    await loadDataAndRender(studentId);
-    updateMeal(dateStr);
-}
-
 async function loadDataAndRender(studentId) {
     try {
-        const [resTime, resMapping] = await Promise.all([
+        const [resTime, resMap] = await Promise.all([
             fetch('표학급시간.csv'),
             fetch('시간표대응.csv')
         ]);
 
         const timeText = await resTime.text();
-        const mappingText = await resMapping.text();
+        const mapText = await resMap.text();
 
-        // 1. 매핑 데이터 정리 (기초A: [학번들], 기초B: [학번들] ...)
-        const mappingRows = mappingText.split('\n').map(r => r.split(','));
-        const subjectHeaders = mappingRows[0].map(h => h.trim()); // 과목명들
-        const studentMap = {}; // { "기초A": "물리II" } 형태
+        // 1. 시간표대응.csv 분석하여 학생의 과목 맵 만들기
+        const mapRows = mapText.split('\n').map(r => r.split(','));
+        const subjectNames = mapRows[0].map(s => s.trim()); // 첫 행: 과목명 리스트
+        const mySubjects = {}; // { "기초A": "기하" } 식의 저장소
 
-        for (let i = 1; i < mappingRows.length; i++) {
-            const row = mappingRows[i];
-            const groupName = row[0].trim(); // 기초A, 기초B 등
+        for (let i = 1; i < mapRows.length; i++) {
+            const row = mapRows[i];
+            const groupName = row[0].trim(); // 기초A, 탐구D 등
             if (!groupName) continue;
 
             for (let j = 1; j < row.length; j++) {
-                const studentsInThisSubject = row[j] || "";
-                // 입력한 학번이 해당 과목 칸에 포함되어 있는지 확인
-                if (studentId && studentsInThisSubject.includes(studentId)) {
-                    studentMap[groupName] = subjectHeaders[j];
+                const students = row[j] || "";
+                // 학번이 포함되어 있는지 확인 (따옴표 등 제거하고 체크)
+                if (studentId && students.replace(/['"]/g, "").includes(studentId)) {
+                    mySubjects[groupName] = subjectNames[j];
                     break;
                 }
             }
         }
 
-        // 2. 시간표 렌더링
+        // 2. 표학급시간.csv를 바탕으로 시간표 그리기
         const timeRows = timeText.split('\n').map(r => r.split(','));
         const tableBody = document.getElementById("timetable-content");
         let html = "";
@@ -98,13 +90,13 @@ async function loadDataAndRender(studentId) {
         for (let p = 1; p <= 7; p++) {
             html += `<tr><td>${p}</td>`;
             for (let d = 1; d <= 5; d++) {
-                let rawSub = timeRows[p] && timeRows[p][d] ? timeRows[p][d].trim() : "-";
+                let cellData = timeRows[p] && timeRows[p][d] ? timeRows[p][d].trim() : "-";
                 
-                // 매핑된 과목이 있으면 교체, 없으면 원래 텍스트(자율 등) 유지
-                const finalSub = studentMap[rawSub] || rawSub;
-                const isMatching = studentMap[rawSub] ? 'class="highlight"' : '';
+                // 학생의 선택 과목이 있는 그룹(기초A 등)이면 과목명으로 교체
+                const finalSub = mySubjects[cellData] || cellData;
+                const matchClass = mySubjects[cellData] ? 'class="is-matched"' : '';
 
-                html += `<td ${isMatching}>${finalSub}</td>`;
+                html += `<td ${matchClass}>${finalSub}</td>`;
             }
             html += `</tr>`;
         }
@@ -112,7 +104,7 @@ async function loadDataAndRender(studentId) {
 
     } catch (e) {
         console.error(e);
-        document.getElementById("timetable-content").innerHTML = "<tr><td colspan='6'>데이터 로드 오류</td></tr>";
+        document.getElementById("timetable-content").innerHTML = "<tr><td colspan='6'>데이터 로드 실패</td></tr>";
     }
 }
 
@@ -121,9 +113,16 @@ function updateByStudentId() {
     if (id.length === 4) {
         localStorage.setItem("ndhs_id", id);
         updateDisplay();
-    } else {
-        alert("학번 4자리를 정확히 입력해주세요.");
     }
+}
+
+async function updateDisplay() {
+    const id = document.getElementById("studentId").value;
+    const d = new Date();
+    const dateStr = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+    
+    await loadDataAndRender(id);
+    updateMeal(dateStr);
 }
 
 async function updateMeal(dateStr) {
