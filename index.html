@@ -5,104 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>녹동고 학급 홈페이지</title>
     <style>
-        body { 
-            font-family: 'Pretendard', -apple-system, sans-serif; 
-            background-color: #f2f4f7; padding: 20px; display: flex; justify-content: center; margin: 0;
-        }
-        .container { width: 100%; max-width: 420px; background: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #1a1a1a; margin-bottom: 15px; font-size: 1.3rem; }
-
-        .setting-group { display: flex; gap: 8px; margin-bottom: 20px; }
-        .setting-group input { flex: 2; padding: 12px; border-radius: 12px; border: 1px solid #e1e8f0; font-size: 1rem; outline: none; }
-        .setting-group button { flex: 1; background: #007AFF; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
-
-        .section-title { font-weight: 700; color: #333; margin-bottom: 12px; display: block; font-size: 1.1rem; }
-        .hint { font-size: 0.8rem; color: #007AFF; margin-bottom: 5px; display: block; }
+        :root { --primary: #007AFF; --bg: #f2f4f7; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; background-color: var(--bg); padding: 15px; display: flex; justify-content: center; margin: 0; }
+        .container { width: 100%; max-width: 420px; background: white; padding: 20px; border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; }
         
-        .timetable-card { background: #fff; border: 1px solid #e1e8f0; border-radius: 18px; padding: 15px; margin-bottom: 30px; }
-        .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; table-layout: fixed; }
-        .timetable th { background: #f8faff; color: #007AFF; padding: 8px 2px; border-bottom: 2px solid #e1e8f0; }
-        .timetable td { padding: 10px 2px; border-bottom: 1px solid #f0f0f0; color: #444; cursor: pointer; height: 40px; }
-        .timetable td:hover { background-color: #f0f7ff; }
-        .custom-sub { color: #007AFF; font-weight: bold; }
-
-        .date-group { display: flex; gap: 8px; margin-bottom: 15px; background: #f0f0f0; padding: 6px; border-radius: 16px; }
-        .date-group button { flex: 1; padding: 10px 0; border: none; border-radius: 12px; background-color: transparent; color: #666; font-weight: 600; cursor: pointer; }
-        .date-group button.active { background-color: #ffffff; color: #007AFF; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #1a1a1a; margin: 10px 0 20px; font-size: 1.4rem; }
         
-        .meal-type-group { display: flex; gap: 5px; margin-bottom: 15px; }
-        .meal-type-group button { flex: 1; padding: 8px 0; border: 1px solid #e1e8f0; border-radius: 10px; background: white; color: #888; cursor: pointer; font-size: 14px; }
-        .meal-type-group button.active { background: #007AFF; color: white; border-color: #007AFF; font-weight: bold; }
+        .setting-box { background: #f8faff; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
+        .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #e1e8f0; font-size: 1rem; outline: none; }
+        .btn-confirm { padding: 0 20px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        
+        
+        .edit-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 0.85rem; color: #666; }
+        
+        .section-title { font-weight: 700; color: #333; margin: 25px 0 12px; display: block; font-size: 1.1rem; }
+        
+        .timetable-card { background: #fff; border: 1px solid #e1e8f0; border-radius: 20px; padding: 10px; overflow: hidden; }
+        .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem; table-layout: fixed; }
+        .timetable th { color: var(--primary); padding: 10px 0; font-weight: 800; border-bottom: 2px solid #f0f4f8; }
+        .timetable td { padding: 12px 2px; border-bottom: 1px solid #f5f5f5; height: 45px; transition: 0.2s; position: relative; }
+        .is-custom { color: var(--primary); font-weight: 800; background: #f0f7ff; border-radius: 10px; }
+        .edit-active td { cursor: pointer; }
+        .edit-active td:hover { background: #f0f0f0; }
 
-        .info-box { padding: 20px; background: #f8faff; border-radius: 18px; border: 1px solid #e1e8f0; min-height: 100px; }
-        #meal { line-height: 1.8; color: #444; font-size: 1.05rem; }
+        /* 과목 선택
+        #subjectModal { display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; 
+                        background: white; border-top-left-radius: 25px; border-top-right-radius: 25px; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); z-index: 1000; padding: 20px; box-sizing: border-box; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; }
+        .subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
+        .sub-btn { padding: 10px 5px; font-size: 0.8rem; border: 1px solid #e1e8f0; border-radius: 10px; background: white; cursor: pointer; transition: 0.2s; }
+        .sub-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .sub-btn.reset { grid-column: span 3; background: #ff3b30; color: white; margin-top: 5px; border: none; }
+
+        /* 급식 */
+        .meal-box { padding: 20px; background: #f8faff; border-radius: 20px; border: 1px solid #e1e8f0; min-height: 80px; line-height: 1.7; color: #444; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>☀️ 녹동고등학교</h2>
+<div class="modal-overlay" id="overlay" onclick="closeModal()"></div>
+<div id="subjectModal">
+    <strong style="display:block; text-align:center;">과목 선택</strong>
+    <div class="subject-grid" id="subjectGrid"></div>
+    <button class="sub-btn reset" onclick="selectSubject('reset')">기본값으로 초기화</button>
+</div>
 
-    <div class="setting-group">
-        <input type="number" id="studentId" placeholder="학번 4자리 (예: 3415)" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
-        <button onclick="updateByStudentId()">확인</button>
+<div class="container">
+    <h2>☀️ 녹동고 3-1 대시보드</h2>
+
+    <div class="setting-box">
+        <div class="input-row">
+            <input type="number" id="studentId" placeholder="학번 4자리" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
+            <button class="btn-confirm" onclick="updateByStudentId()">확인</button>
+        </div>
+        <div class="edit-control">
+            <span>수정 모드 활성화</span>
+            <input type="checkbox" id="editMode" style="flex:none; width:18px; height:18px; cursor:pointer;">
+        </div>
     </div>
 
-    <span class="section-title">📅 <span id="classInfo">3학년 1반</span> 시간표</span>
-    <span class="hint">* 이동수업 칸을 클릭해서 과목을 선택하세요.</span>
+    <span class="section-title">📅 <span id="classInfo">3-1</span> 시간표</span>
     <div class="timetable-card">
-        <table class="timetable">
+        <table class="timetable" id="timetableMain">
             <thead>
-                <tr>
-                    <th style="width:15%">교시</th>
-                    <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
-                </tr>
+                <tr><th style="width:15%">교시</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th></tr>
             </thead>
             <tbody id="timetable-content"></tbody>
         </table>
     </div>
 
-    <span class="section-title" id="mealMainTitle">🍱 오늘의 급식</span>
-    <div class="date-group">
-        <button type="button" onclick="changeDate(-1)"><span>이전날</span></button>
-        <button type="button" class="active" onclick="changeDate(0)"><span>오늘</span></button>
-        <button type="button" onclick="changeDate(1)"><span>다음날</span></button>
-    </div>
-
-    <div class="meal-type-group">
-        <button type="button" id="type1" onclick="changeMealType(1)">조식</button>
-        <button type="button" id="type2" class="active" onclick="changeMealType(2)">중식</button>
-        <button type="button" id="type3" onclick="changeMealType(3)">석식</button>
-    </div>
-
-    <div class="info-box">
-        <div id="meal">불러오는 중...</div>
-    </div>
+    <span class="section-title">🍱 오늘의 급식</span>
+    <div class="meal-box" id="meal">불러오는 중...</div>
 </div>
 
 <script>
-const OFFICE_CODE = "Q10";
-const SCHOOL_CODE = "8490270";
-const SELECT_SUBJECTS = [
+const OFFICE_CODE = "Q10", SCHOOL_CODE = "8490270";
+const SUBJECTS = [
     "화법과 작문", "언어와 매체", "미적분", "기하", "심화 영어", 
-    "지구과학Ⅱ", "물리Ⅱ", "생명과학Ⅱ", "화학Ⅱ", 
-    "여행지리", "사회 문화", "고전과 윤리", "삭제(기본값)"
+    "지구과학Ⅱ", "물리Ⅱ", "생명과학Ⅱ", "화학Ⅱ", "인공지능 기초",
+    "교육학", "보건", "중국어", "여행지리", "사회 문화", "고전과 윤리"
 ];
 
-let GRADE = "3", CLASS_NM = "1", currentOffset = 0, currentType = 2;
+let GRADE = "3", CLASS_NM = "1", currentTargetCell = null;
+
+// 과목 버튼
+const grid = document.getElementById('subjectGrid');
+SUBJECTS.forEach(sub => {
+    const btn = document.createElement('button');
+    btn.className = 'sub-btn';
+    btn.innerText = sub;
+    btn.onclick = () => selectSubject(sub);
+    grid.appendChild(btn);
+});
 
 function updateByStudentId() {
-    const idInput = document.getElementById("studentId").value;
-    if (idInput.length !== 4) return alert("학번 4자리를 입력하세요.");
-    GRADE = idInput[0];
-    CLASS_NM = parseInt(idInput[1]).toString();
-    localStorage.setItem("ndhs_id", idInput);
-    document.getElementById("classInfo").innerText = `${GRADE}학년 ${CLASS_NM}반`;
+    const id = document.getElementById("studentId").value;
+    if (id.length !== 4) return alert("학번 4자리를 입력하세요.");
+    GRADE = id[0]; CLASS_NM = parseInt(id[1]).toString();
+    localStorage.setItem("ndhs_id", id);
+    document.getElementById("classInfo").innerText = `${GRADE}-${CLASS_NM}반`;
     updateDisplay();
 }
 
 async function updateDisplay() {
-    const d = new Date(); d.setDate(d.getDate() + currentOffset);
+    const d = new Date();
     const dateStr = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
     updateTimetable(d);
     updateMeal(dateStr);
@@ -133,43 +140,45 @@ async function updateTimetable(baseDate) {
                 const found = dayData[1].row.find(r => parseInt(r.PERIO) === p);
                 if(found) sub = found.ITRT_CNTNT.replace(/\[.*\]/, "");
             }
-            
-            const cellId = `cell-${d}-${p}`;
+            const cellId = `c-${d}-${p}`;
             const custom = localStorage.getItem(cellId);
-            html += `<td id="${cellId}" onclick="setSubject('${cellId}')" class="${custom ? 'custom-sub' : ''}">${custom || sub}</td>`;
+            html += `<td onclick="openModal('${cellId}')" id="${cellId}" class="${custom ? 'is-custom' : ''}">${custom || sub}</td>`;
         }
         html += `</tr>`;
     }
     tableBody.innerHTML = html;
 }
 
-function setSubject(id) {
-    const current = document.getElementById(id).innerText;
-    let menu = "변경할 과목을 선택하세요:\n" + SELECT_SUBJECTS.map((s, i) => `${i+1}. ${s}`).join("\n");
-    const choice = prompt(menu);
-    if(choice) {
-        const idx = parseInt(choice) - 1;
-        if(SELECT_SUBJECTS[idx]) {
-            if(SELECT_SUBJECTS[idx].includes("삭제")) {
-                localStorage.removeItem(id);
-            } else {
-                localStorage.setItem(id, SELECT_SUBJECTS[idx]);
-            }
-            updateDisplay();
-        }
-    }
+function openModal(id) {
+    if(!document.getElementById('editMode').checked) return; // 수정 모드 꺼져있으면 클릭 무시
+    currentTargetCell = id;
+    document.getElementById('subjectModal').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('subjectModal').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+
+function selectSubject(sub) {
+    if(sub === 'reset') localStorage.removeItem(currentTargetCell);
+    else localStorage.setItem(currentTargetCell, sub);
+    closeModal();
+    updateDisplay();
 }
 
 async function updateMeal(dateStr) {
     try {
-        const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&MLSV_YMD=${dateStr}&MMEAL_SC_CODE=${currentType}`);
+        const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&MLSV_YMD=${dateStr}&MMEAL_SC_CODE=2`);
         const data = await res.json();
         document.getElementById("meal").innerHTML = data.mealServiceDietInfo?.[1].row[0].DDISH_NM.replace(/\([0-9.]+\)/g, "").split('<br/>').join('<br>') || "정보 없음";
     } catch { document.getElementById("meal").innerText = "로드 실패"; }
 }
 
-function changeDate(o) { currentOffset = (o === 0) ? 0 : currentOffset + o; updateDisplay(); }
-function changeMealType(t) { currentType = t; updateDisplay(); }
+document.getElementById('editMode').onchange = function() {
+    document.getElementById('timetableMain').classList.toggle('edit-active', this.checked);
+};
 
 window.onload = () => {
     const saved = localStorage.getItem("ndhs_id");
