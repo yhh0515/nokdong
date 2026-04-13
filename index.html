@@ -3,23 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>녹동고 3-1 자동 시간표</title>
+    <title>녹동고 3-1 대시보드</title>
     <style>
         :root { --primary: #007AFF; --bg: #f2f4f7; }
         body { font-family: 'Pretendard', -apple-system, sans-serif; background-color: var(--bg); padding: 15px; display: flex; justify-content: center; margin: 0; }
-        .container { width: 100%; max-width: 420px; background: white; padding: 20px; border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .container { width: 100%; max-width: 420px; background: white; padding: 20px; border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); position: relative; }
+        
         h2 { text-align: center; color: #1a1a1a; margin: 10px 0 20px; font-size: 1.4rem; }
+        
         .setting-box { background: #f8faff; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
         .input-row { display: flex; gap: 8px; }
         input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #e1e8f0; font-size: 1rem; outline: none; }
         .btn-confirm { padding: 0 20px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        
         .section-title { font-weight: 700; color: #333; margin: 25px 0 12px; display: block; font-size: 1.1rem; }
+        
         .timetable-card { background: #fff; border: 1px solid #e1e8f0; border-radius: 20px; padding: 10px; overflow: hidden; }
         .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem; table-layout: fixed; }
         .timetable th { color: var(--primary); padding: 10px 0; font-weight: 800; border-bottom: 2px solid #f0f4f8; }
-        .timetable td { padding: 12px 2px; border-bottom: 1px solid #f5f5f5; height: 45px; }
-        /* 자동으로 바뀐 과목 강조 스타일 */
+        .timetable td { padding: 12px 2px; border-bottom: 1px solid #f5f5f5; height: 45px; transition: 0.2s; }
+        
+        /* 매칭된 선택과목 강조 */
         .is-matched { color: var(--primary); font-weight: 800; background: #f0f7ff; border-radius: 10px; }
+
         .meal-box { padding: 20px; background: #f8faff; border-radius: 20px; border: 1px solid #e1e8f0; min-height: 80px; line-height: 1.7; color: #444; }
     </style>
 </head>
@@ -30,7 +36,7 @@
 
     <div class="setting-box">
         <div class="input-row">
-            <input type="number" id="studentId" placeholder="학번 4자리 (예: 3110)" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
+            <input type="number" id="studentId" placeholder="학번 4자리 (예: 3114)" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
             <button class="btn-confirm" onclick="updateByStudentId()">확인</button>
         </div>
     </div>
@@ -52,6 +58,7 @@
 <script>
 const OFFICE_CODE = "Q10", SCHOOL_CODE = "8490270";
 
+// 데이터 로드 및 렌더링 함수
 async function loadDataAndRender(studentId) {
     try {
         const [resTime, resMap] = await Promise.all([
@@ -62,27 +69,30 @@ async function loadDataAndRender(studentId) {
         const timeText = await resTime.text();
         const mapText = await resMap.text();
 
-        // 1. 시간표대응.csv 분석하여 학생의 과목 맵 만들기
+        // 1. 시간표대응.csv 파싱 (선택과목 매핑)
         const mapRows = mapText.split('\n').map(r => r.split(','));
-        const subjectNames = mapRows[0].map(s => s.trim()); // 첫 행: 과목명 리스트
-        const mySubjects = {}; // { "기초A": "기하" } 식의 저장소
+        const subjectNames = mapRows[0].map(s => s.trim()); // 첫 줄: 과목명
+        const mySubjects = {}; // 사용자의 선택과목 저장소
 
         for (let i = 1; i < mapRows.length; i++) {
             const row = mapRows[i];
-            const groupName = row[0].trim(); // 기초A, 탐구D 등
+            const groupName = row[0] ? row[0].trim() : ""; // 기초A, 탐구D 등
             if (!groupName) continue;
 
             for (let j = 1; j < row.length; j++) {
-                const students = row[j] || "";
-                // 학번이 포함되어 있는지 확인 (따옴표 등 제거하고 체크)
-                if (studentId && students.replace(/['"]/g, "").includes(studentId)) {
+                let cellContent = row[j] || "";
+                
+                // 정규표현식으로 숫자 4자리만 추출 (3114'나 쉼표 등 방해 요소 제거)
+                const studentList = cellContent.match(/\d{4}/g); 
+                
+                if (studentList && studentList.includes(studentId)) {
                     mySubjects[groupName] = subjectNames[j];
-                    break;
+                    break; 
                 }
             }
         }
 
-        // 2. 표학급시간.csv를 바탕으로 시간표 그리기
+        // 2. 표학급시간.csv 파싱 및 테이블 생성
         const timeRows = timeText.split('\n').map(r => r.split(','));
         const tableBody = document.getElementById("timetable-content");
         let html = "";
@@ -90,11 +100,11 @@ async function loadDataAndRender(studentId) {
         for (let p = 1; p <= 7; p++) {
             html += `<tr><td>${p}</td>`;
             for (let d = 1; d <= 5; d++) {
-                let cellData = timeRows[p] && timeRows[p][d] ? timeRows[p][d].trim() : "-";
+                let rawSub = timeRows[p] && timeRows[p][d] ? timeRows[p][d].trim() : "-";
                 
-                // 학생의 선택 과목이 있는 그룹(기초A 등)이면 과목명으로 교체
-                const finalSub = mySubjects[cellData] || cellData;
-                const matchClass = mySubjects[cellData] ? 'class="is-matched"' : '';
+                // 대응표에 있는 그룹명이면 과목명으로 교체
+                const finalSub = mySubjects[rawSub] || rawSub;
+                const matchClass = mySubjects[rawSub] ? 'class="is-matched"' : '';
 
                 html += `<td ${matchClass}>${finalSub}</td>`;
             }
@@ -103,11 +113,12 @@ async function loadDataAndRender(studentId) {
         tableBody.innerHTML = html;
 
     } catch (e) {
-        console.error(e);
-        document.getElementById("timetable-content").innerHTML = "<tr><td colspan='6'>데이터 로드 실패</td></tr>";
+        console.error("데이터 읽기 실패:", e);
+        document.getElementById("timetable-content").innerHTML = "<tr><td colspan='6'>CSV 파일을 불러올 수 없습니다.</td></tr>";
     }
 }
 
+// 학번 입력 확인
 function updateByStudentId() {
     const id = document.getElementById("studentId").value;
     if (id.length === 4) {
@@ -116,6 +127,7 @@ function updateByStudentId() {
     }
 }
 
+// 화면 업데이트 (시간표 + 급식)
 async function updateDisplay() {
     const id = document.getElementById("studentId").value;
     const d = new Date();
@@ -125,16 +137,22 @@ async function updateDisplay() {
     updateMeal(dateStr);
 }
 
+// NEIS 급식 API 호출
 async function updateMeal(dateStr) {
     try {
         const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&MLSV_YMD=${dateStr}&MMEAL_SC_CODE=2`);
         const data = await res.json();
         if(data.mealServiceDietInfo) {
             document.getElementById("meal").innerHTML = data.mealServiceDietInfo[1].row[0].DDISH_NM.replace(/\([0-9.]+\)/g, "").split('<br/>').join('<br>');
-        } else { document.getElementById("meal").innerText = "급식 정보가 없습니다."; }
-    } catch { document.getElementById("meal").innerText = "급식 로드 실패"; }
+        } else {
+            document.getElementById("meal").innerText = "오늘의 급식 정보가 없습니다.";
+        }
+    } catch {
+        document.getElementById("meal").innerText = "급식 정보를 불러오지 못했습니다.";
+    }
 }
 
+// 초기 실행
 window.onload = () => {
     const saved = localStorage.getItem("ndhs_id");
     if(saved) {
