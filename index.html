@@ -12,50 +12,50 @@
         .container { width: 100%; max-width: 420px; background: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         h2 { text-align: center; color: #1a1a1a; margin-bottom: 15px; font-size: 1.3rem; }
 
-        /* 학번 입력 영역 */
         .setting-group { display: flex; gap: 8px; margin-bottom: 20px; }
         .setting-group input { flex: 2; padding: 12px; border-radius: 12px; border: 1px solid #e1e8f0; font-size: 1rem; outline: none; }
         .setting-group button { flex: 1; background: #007AFF; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
 
         .section-title { font-weight: 700; color: #333; margin-bottom: 12px; display: block; font-size: 1.1rem; }
+        .hint { font-size: 0.8rem; color: #007AFF; margin-bottom: 5px; display: block; }
         
         .timetable-card { background: #fff; border: 1px solid #e1e8f0; border-radius: 18px; padding: 15px; margin-bottom: 30px; }
         .timetable { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; table-layout: fixed; }
         .timetable th { background: #f8faff; color: #007AFF; padding: 8px 2px; border-bottom: 2px solid #e1e8f0; }
-        .timetable td { padding: 10px 2px; border-bottom: 1px solid #f0f0f0; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .current-day { background-color: #f0f7ff; font-weight: bold; color: #007AFF !important; border-radius: 8px; }
+        .timetable td { padding: 10px 2px; border-bottom: 1px solid #f0f0f0; color: #444; cursor: pointer; height: 40px; }
+        .timetable td:hover { background-color: #f0f7ff; }
+        .custom-sub { color: #007AFF; font-weight: bold; }
 
         .date-group { display: flex; gap: 8px; margin-bottom: 15px; background: #f0f0f0; padding: 6px; border-radius: 16px; }
         .date-group button { flex: 1; padding: 10px 0; border: none; border-radius: 12px; background-color: transparent; color: #666; font-weight: 600; cursor: pointer; }
         .date-group button.active { background-color: #ffffff; color: #007AFF; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .date-group button span { display: block; font-size: 10px; opacity: 0.7; }
-
+        
         .meal-type-group { display: flex; gap: 5px; margin-bottom: 15px; }
         .meal-type-group button { flex: 1; padding: 8px 0; border: 1px solid #e1e8f0; border-radius: 10px; background: white; color: #888; cursor: pointer; font-size: 14px; }
         .meal-type-group button.active { background: #007AFF; color: white; border-color: #007AFF; font-weight: bold; }
 
         .info-box { padding: 20px; background: #f8faff; border-radius: 18px; border: 1px solid #e1e8f0; min-height: 100px; }
         #meal { line-height: 1.8; color: #444; font-size: 1.05rem; }
-        .no-meal { color: #999; text-align: center; padding: 20px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 id="mainTitle">☀️ 녹동고등학교</h2>
+    <h2>☀️ 녹동고등학교</h2>
 
     <div class="setting-group">
-        <input type="number" id="studentId" placeholder="학번 4자리 (예: 3415)" maxlength="4">
+        <input type="number" id="studentId" placeholder="학번 4자리 (예: 3415)" onkeyup="if(window.event.keyCode==13){updateByStudentId()}">
         <button onclick="updateByStudentId()">확인</button>
     </div>
 
-    <span class="section-title">📅 <span id="classInfo">반을 입력해주세요</span> 시간표</span>
+    <span class="section-title">📅 <span id="classInfo">3학년 1반</span> 시간표</span>
+    <span class="hint">* 이동수업 칸을 클릭해서 과목을 선택하세요.</span>
     <div class="timetable-card">
         <table class="timetable">
             <thead>
                 <tr>
                     <th style="width:15%">교시</th>
-                    <th id="day1">월</th><th id="day2">화</th><th id="day3">수</th><th id="day4">목</th><th id="day5">금</th>
+                    <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
                 </tr>
             </thead>
             <tbody id="timetable-content"></tbody>
@@ -64,15 +64,9 @@
 
     <span class="section-title" id="mealMainTitle">🍱 오늘의 급식</span>
     <div class="date-group">
-        <button type="button" onclick="changeDate(-1)">
-            <span>이전날</span><div id="prevDateText">0.0</div>
-        </button>
-        <button type="button" class="active" onclick="changeDate(0)">
-            <span>선택됨</span><div id="todayDateText">0.0</div>
-        </button>
-        <button type="button" onclick="changeDate(1)">
-            <span>다음날</span><div id="nextDateText">0.0</div>
-        </button>
+        <button type="button" onclick="changeDate(-1)"><span>이전날</span></button>
+        <button type="button" class="active" onclick="changeDate(0)"><span>오늘</span></button>
+        <button type="button" onclick="changeDate(1)"><span>다음날</span></button>
     </div>
 
     <div class="meal-type-group">
@@ -82,145 +76,105 @@
     </div>
 
     <div class="info-box">
-        <div id="meal">학번 입력 후 확인을 눌러주세요.</div>
+        <div id="meal">불러오는 중...</div>
     </div>
 </div>
 
 <script>
 const OFFICE_CODE = "Q10";
 const SCHOOL_CODE = "8490270";
+const SELECT_SUBJECTS = [
+    "화법과 작문", "언어와 매체", "미적분", "기하", "심화 영어", 
+    "지구과학Ⅱ", "물리Ⅱ", "생명과학Ⅱ", "화학Ⅱ", 
+    "여행지리", "사회 문화", "고전과 윤리", "삭제(기본값)"
+];
 
-let GRADE = "3";
-let CLASS_NM = "1";
-let currentOffset = 0;
-let currentType = 2; 
+let GRADE = "3", CLASS_NM = "1", currentOffset = 0, currentType = 2;
 
-// 학번 입력 및 파싱
 function updateByStudentId() {
     const idInput = document.getElementById("studentId").value;
-    
-    if (idInput.length !== 4) {
-        alert("학번 4자리를 입력해주세요! (예: 3415)");
-        return;
-    }
-
-    GRADE = idInput.substring(0, 1);
-    const classVal = parseInt(idInput.substring(1, 2));
-
-    if (classVal > 4 || classVal < 1) {
-        alert("녹동고는 1~4반까지만 조회가 가능합니다.");
-        return;
-    }
-
-    CLASS_NM = classVal.toString();
-    localStorage.setItem("ndhs_student_id", idInput);
-    
+    if (idInput.length !== 4) return alert("학번 4자리를 입력하세요.");
+    GRADE = idInput[0];
+    CLASS_NM = parseInt(idInput[1]).toString();
+    localStorage.setItem("ndhs_id", idInput);
     document.getElementById("classInfo").innerText = `${GRADE}학년 ${CLASS_NM}반`;
     updateDisplay();
 }
 
 async function updateDisplay() {
-    const baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() + currentOffset);
-    const dateStr = baseDate.getFullYear() + String(baseDate.getMonth() + 1).padStart(2, '0') + String(baseDate.getDate()).padStart(2, '0');
-    
-    const days = ["일","월","화","수","목","금","토"];
-    document.getElementById("mealMainTitle").innerText = `🍱 ${baseDate.getMonth()+1}/${baseDate.getDate()}(${days[baseDate.getDay()]}) ${["","조식","중식","석식"][currentType]}`;
-
-    const setBtnDate = (id, offset) => {
-        const d = new Date(); d.setDate(d.getDate() + currentOffset + offset);
-        document.getElementById(id).innerText = `${d.getMonth() + 1}.${d.getDate()}`;
-    };
-    setBtnDate("prevDateText", -1); setBtnDate("todayDateText", 0); setBtnDate("nextDateText", 1);
-
-    // 오늘 요일 강조
-    const realToday = new Date().getDay();
-    for(let i=1; i<=5; i++) {
-        document.getElementById(`day${i}`).classList.toggle("current-day", i === realToday);
-    }
-
-    updateTimetable(baseDate);
+    const d = new Date(); d.setDate(d.getDate() + currentOffset);
+    const dateStr = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+    updateTimetable(d);
     updateMeal(dateStr);
 }
 
 async function updateTimetable(baseDate) {
     const tableBody = document.getElementById("timetable-content");
-    const currentDay = baseDate.getDay();
-    const diff = baseDate.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
-    const monday = new Date(baseDate);
-    monday.setDate(diff);
+    const diff = baseDate.getDate() - baseDate.getDay() + (baseDate.getDay() === 0 ? -6 : 1);
+    const monday = new Date(baseDate); monday.setDate(diff);
 
     const weekDates = [];
     for(let i=0; i<5; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        weekDates.push(d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'));
+        const d = new Date(monday); d.setDate(monday.getDate() + i);
+        weekDates.push(d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'));
     }
 
-    try {
-        const requests = weekDates.map(d => 
-            fetch(`https://open.neis.go.kr/hub/hisTimetable?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&GRADE=${GRADE}&CLASS_NM=${CLASS_NM}&ALL_TI_YMD=${d}`)
-            .then(res => res.json())
-        );
+    const results = await Promise.all(weekDates.map(d => 
+        fetch(`https://open.neis.go.kr/hub/hisTimetable?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&GRADE=${GRADE}&CLASS_NM=${CLASS_NM}&ALL_TI_YMD=${d}`).then(r => r.json())
+    ));
 
-        const results = await Promise.all(requests);
-        let newContent = "";
-        for(let p=1; p<=7; p++) {
-            let rowHtml = `<tr><td>${p}</td>`;
-            for(let d=0; d<5; d++) {
-                const dayData = results[d].hisTimetable;
-                let subject = "-";
-                if(dayData && dayData[1] && dayData[1].row) {
-                    const periodData = dayData[1].row.find(r => parseInt(r.PERIO) === p);
-                    if(periodData) subject = periodData.ITRT_CNTNT.replace(/\[.*\]/, "");
-                }
-                rowHtml += `<td>${subject}</td>`;
+    let html = "";
+    for(let p=1; p<=7; p++) {
+        html += `<tr><td>${p}</td>`;
+        for(let d=1; d<=5; d++) {
+            const dayData = results[d-1].hisTimetable;
+            let sub = "-";
+            if(dayData?.[1]?.row) {
+                const found = dayData[1].row.find(r => parseInt(r.PERIO) === p);
+                if(found) sub = found.ITRT_CNTNT.replace(/\[.*\]/, "");
             }
-            rowHtml += `</tr>`;
-            newContent += rowHtml;
+            
+            const cellId = `cell-${d}-${p}`;
+            const custom = localStorage.getItem(cellId);
+            html += `<td id="${cellId}" onclick="setSubject('${cellId}')" class="${custom ? 'custom-sub' : ''}">${custom || sub}</td>`;
         }
-        tableBody.innerHTML = newContent;
-    } catch (e) {
-        tableBody.innerHTML = "<tr><td colspan='6'>데이터 오류</td></tr>";
+        html += `</tr>`;
+    }
+    tableBody.innerHTML = html;
+}
+
+function setSubject(id) {
+    const current = document.getElementById(id).innerText;
+    let menu = "변경할 과목을 선택하세요:\n" + SELECT_SUBJECTS.map((s, i) => `${i+1}. ${s}`).join("\n");
+    const choice = prompt(menu);
+    if(choice) {
+        const idx = parseInt(choice) - 1;
+        if(SELECT_SUBJECTS[idx]) {
+            if(SELECT_SUBJECTS[idx].includes("삭제")) {
+                localStorage.removeItem(id);
+            } else {
+                localStorage.setItem(id, SELECT_SUBJECTS[idx]);
+            }
+            updateDisplay();
+        }
     }
 }
 
 async function updateMeal(dateStr) {
-    const mealEl = document.getElementById("meal");
-    document.querySelectorAll('.meal-type-group button').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`type${currentType}`).classList.add('active');
-
     try {
         const res = await fetch(`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${OFFICE_CODE}&SD_SCHUL_CODE=${SCHOOL_CODE}&MLSV_YMD=${dateStr}&MMEAL_SC_CODE=${currentType}`);
         const data = await res.json();
-        if (data.mealServiceDietInfo) {
-            let menu = data.mealServiceDietInfo[1].row[0].DDISH_NM.replace(/\([0-9.]+\)/g, "").trim();
-            mealEl.innerHTML = menu.split('<br/>').join('<br>');
-        } else {
-            mealEl.innerHTML = "<div class='no-meal'>등록된 급식 정보가 없습니다.</div>";
-        }
-    } catch (e) {
-        mealEl.innerHTML = "<div class='no-meal'>급식 정보를 불러오지 못했습니다.</div>";
-    }
+        document.getElementById("meal").innerHTML = data.mealServiceDietInfo?.[1].row[0].DDISH_NM.replace(/\([0-9.]+\)/g, "").split('<br/>').join('<br>') || "정보 없음";
+    } catch { document.getElementById("meal").innerText = "로드 실패"; }
 }
 
-function changeDate(offset) {
-    currentOffset = (offset === 0) ? 0 : currentOffset + offset;
-    updateDisplay();
-}
+function changeDate(o) { currentOffset = (o === 0) ? 0 : currentOffset + o; updateDisplay(); }
+function changeMealType(t) { currentType = t; updateDisplay(); }
 
-function changeMealType(type) {
-    currentType = type;
-    updateDisplay();
-}
-
-// 초기 로드: 저장된 학번 확인
 window.onload = () => {
-    const savedId = localStorage.getItem("ndhs_student_id");
-    if (savedId) {
-        document.getElementById("studentId").value = savedId;
-        updateByStudentId();
-    }
+    const saved = localStorage.getItem("ndhs_id");
+    if(saved) { document.getElementById("studentId").value = saved; updateByStudentId(); }
+    else { updateDisplay(); }
 };
 </script>
 </body>
